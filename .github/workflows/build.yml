@@ -14,8 +14,13 @@ jobs:
 
       - name: Compile Native 64-Bit iOS Binary
         run: |
+          # 1. Force the virtual environment to bind to the active Xcode toolchain path
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          
+          # 2. Extract the physical platform system root location
           SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
           
+          # 3. Process main.m directly into an ARM64 binary executable 
           xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc \
             -isysroot "$SDK_PATH" \
             -miphoneos-version-min=14.0 \
@@ -31,10 +36,12 @@ jobs:
           rm -rf Payload
           mkdir -p Payload/MoviePlayer.app
           
+          # Migrating artifacts into the deployment bundle context
           mv MoviePlayer Payload/MoviePlayer.app/
           cp Info.plist Payload/MoviePlayer.app/
           cp Movie.m4v Payload/MoviePlayer.app/
           
+          # Verify and copy assets safely if present in workspace root
           cp icon.png Payload/MoviePlayer.app/ 2>/dev/null || true
           cp local.png Payload/MoviePlayer.app/ 2>/dev/null || true
           cp streaming.png Payload/MoviePlayer.app/ 2>/dev/null || true
