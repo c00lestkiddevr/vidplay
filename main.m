@@ -1,6 +1,5 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
-#import <AVKit/AVKit.h>
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -10,23 +9,24 @@
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    // 1. Manually configure the base window layer geometry
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    UIViewController *viewController = [[UIViewController alloc] init];
-    viewController.view.backgroundColor = [UIColor blackColor];
+    UIViewController *rootVC = [[UIViewController alloc] init];
+    rootVC.view.backgroundColor = [UIColor blackColor];
     
-    // Find the video file in the app bundle
+    // 2. Discover the target video inside the application package root
     NSString *videoPath = [[NSBundle mainBundle] pathForResource:@"Movie" ofType:@"m4v"];
     if (videoPath) {
         NSURL *videoURL = [NSURL fileURLWithPath:videoPath];
         self.player = [AVPlayer playerWithURL:videoURL];
         
-        // Use raw AVPlayerLayer so there are absolutely NO menus, seekbars, or playback controls
+        // 3. Render raw decoded video directly to the viewport layer with zero overlays
         AVPlayerLayer *playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
-        playerLayer.frame = viewController.view.bounds;
-        playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill; // Full screen fill
-        [viewController.view.layer addSublayer:playerLayer];
+        playerLayer.frame = self.window.bounds;
+        playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+        [rootVC.view.layer addSublayer:playerLayer];
         
-        // Loop the video infinitely when it ends
+        // 4. Register a looping callback hook
         [[NSNotificationCenter defaultCenter] addObserverForName:AVPlayerItemDidPlayToEndTime
                                                           object:self.player.currentItem
                                                            queue:[NSOperationQueue mainQueue]
@@ -36,7 +36,7 @@
         }];
     }
     
-    self.window.rootViewController = viewController;
+    self.window.rootViewController = rootVC;
     [self.window makeKeyAndVisible];
     
     if (self.player) {
@@ -47,8 +47,15 @@
 }
 @end
 
+// Fallback runtime context mapping
+@interface MoviePlayerViewApplication : UIApplication
+@end
+@implementation MoviePlayerViewApplication
+@end
+
 int main(int argc, char * argv[]) {
     @autoreleasepool {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
+        return UIApplicationMain(argc, argv, NSStringFromClass([MoviePlayerViewApplication class]), NSStringFromClass([AppDelegate class]));
     }
 }
+
