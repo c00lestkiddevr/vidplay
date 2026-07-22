@@ -14,30 +14,27 @@ jobs:
 
       - name: Compile Native 64-Bit iOS Binary
         run: |
-          # Dynamically locate the path to the internal iOS SDK on the Mac
           SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
           
-          # Compile main.m using the exact system root paths and target architectures
           xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc \
             -isysroot "$SDK_PATH" \
             -miphoneos-version-min=14.0 \
             -framework UIKit \
             -framework Foundation \
             -framework AVFoundation \
-            -framework AVKit \
             -framework CoreMedia \
+            -framework QuartzCore \
             main.m -o MoviePlayer
 
       - name: Assemble Sideload Payload Structure
         run: |
+          rm -rf Payload
           mkdir -p Payload/MoviePlayer.app
           
-          # Move compiled 64-bit binary and configuration schemas into place
           mv MoviePlayer Payload/MoviePlayer.app/
           cp Info.plist Payload/MoviePlayer.app/
           cp Movie.m4v Payload/MoviePlayer.app/
           
-          # Check for optional images and move them safely if present
           cp icon.png Payload/MoviePlayer.app/ 2>/dev/null || true
           cp local.png Payload/MoviePlayer.app/ 2>/dev/null || true
           cp streaming.png Payload/MoviePlayer.app/ 2>/dev/null || true
