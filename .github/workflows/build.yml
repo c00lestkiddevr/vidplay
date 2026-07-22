@@ -1,0 +1,40 @@
+name: Package iOS IPA
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows you to manually trigger the build via the browser interface
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Contents
+        uses: actions/checkout@v4
+
+      - name: Assemble Sideload Payload Structure
+        run: |
+          # 1. Create a clean system folder structure required by iOS signature standards
+          mkdir -p Payload/MoviePlayer.app
+          
+          # 2. Safely locate and migration files into the main application container
+          cp Info.plist Payload/MoviePlayer.app/
+          cp MoviePlayer Payload/MoviePlayer.app/
+          cp Movie.m4v Payload/MoviePlayer.app/
+          cp icon.png Payload/MoviePlayer.app/
+          
+          # 3. Optional: Move accessory graphics if they exist in your workspace
+          cp local.png Payload/MoviePlayer.app/ 2>/dev/null || true
+          cp streaming.png Payload/MoviePlayer.app/ 2>/dev/null || true
+          cp preview.jpg Payload/MoviePlayer.app/ 2>/dev/null || true
+
+      - name: Compress into Native IPA Format
+        run: |
+          # Compress the root directory structure securely into a universal application format
+          zip -r Pirates_Rebuilt.ipa Payload/
+
+      - name: Upload Completed Package to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pirates_Sideload_Package
+          path: Pirates_Rebuilt.ipa
