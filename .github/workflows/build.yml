@@ -1,40 +1,43 @@
-name: Package iOS IPA
+name: Build 64-Bit MoviePlayer
 
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # Allows you to manually trigger the build via the browser interface
+  workflow_dispatch:
 
 jobs:
-  package:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: macos-14  # This gives you a free cloud Mac to compile actual 64-bit code
     steps:
       - name: Checkout Repository Contents
         uses: actions/checkout@v4
 
+      - name: Compile Native 64-Bit iOS Binary
+        run: |
+          # Compiles main.m into a true 64-bit (arm64) executable target
+          xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc \
+            -framework UIKit -framework Foundation -framework AVFoundation -framework AVKit -framework CoreMedia \
+            main.m -o MoviePlayer
+
       - name: Assemble Sideload Payload Structure
         run: |
-          # 1. Create a clean system folder structure required by iOS signature standards
           mkdir -p Payload/MoviePlayer.app
           
-          # 2. Safely locate and migration files into the main application container
+          # Move the newly compiled 64-bit binary and resources into place
+          mv MoviePlayer Payload/MoviePlayer.app/
           cp Info.plist Payload/MoviePlayer.app/
-          cp MoviePlayer Payload/MoviePlayer.app/
           cp Movie.m4v Payload/MoviePlayer.app/
-          cp icon.png Payload/MoviePlayer.app/
-          
-          # 3. Optional: Move accessory graphics if they exist in your workspace
+          cp icon.png Payload/MoviePlayer.app/ 2>/dev/null || true
           cp local.png Payload/MoviePlayer.app/ 2>/dev/null || true
           cp streaming.png Payload/MoviePlayer.app/ 2>/dev/null || true
           cp preview.jpg Payload/MoviePlayer.app/ 2>/dev/null || true
 
       - name: Compress into Native IPA Format
         run: |
-          # Compress the root directory structure securely into a universal application format
-          zip -r Pirates_Rebuilt.ipa Payload/
+          zip -r MoviePlayer_64Bit.ipa Payload/
 
       - name: Upload Completed Package to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: Pirates_Sideload_Package
-          path: Pirates_Rebuilt.ipa
+          name: Modern_Pirates_Package
+          path: MoviePlayer_64Bit.ipa
